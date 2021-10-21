@@ -62,6 +62,8 @@ class _KeyboardCustomInputState<T> extends State<KeyboardCustomInput<T>>
               focusedBorder: InputBorder.none,
               errorBorder: InputBorder.none,
               enabled: false,
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
             ),
             isFocused: _hasFocus!,
             child: MergeSemantics(

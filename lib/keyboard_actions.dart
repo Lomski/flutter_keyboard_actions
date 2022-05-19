@@ -148,6 +148,24 @@ class KeyboardActionstate extends State<KeyboardActions>
     return nextIndex < _map.length ? nextIndex : null;
   }
 
+  /// The distance from the bottom of the KeyboardActions widget to the
+  /// bottom of the view port.
+  ///
+  /// Used to correctly calculate the offset to "avoid" with BottomAreaAvoider.
+  double get _distanceBelowWidget {
+    if (_keyParent.currentContext != null) {
+      final widgetRenderBox =
+          _keyParent.currentContext!.findRenderObject() as RenderBox;
+      final fullHeight = MediaQuery.of(context).size.height;
+      final widgetHeight = widgetRenderBox.size.height;
+      final widgetTop = widgetRenderBox.localToGlobal(Offset.zero).dy;
+      final widgetBottom = widgetTop + widgetHeight;
+      final distanceBelowWidget = fullHeight - widgetBottom;
+      return distanceBelowWidget;
+    }
+    return 0;
+  }
+
   /// Set the config for the keyboard action bar.
   void setConfig(KeyboardActionsConfig newConfig) {
     clearConfig();
@@ -262,7 +280,7 @@ class KeyboardActionstate extends State<KeyboardActions>
         _overlayEntry!.markNeedsBuild();
       }
       if (_currentAction != null && _currentAction!.footerBuilder != null) {
-        WidgetsBinding.instance!.addPostFrameCallback((_) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
           _updateOffset();
         });
       }
@@ -272,8 +290,12 @@ class KeyboardActionstate extends State<KeyboardActions>
   @override
   void didChangeMetrics() {
     if (PlatformCheck.isAndroid) {
-      final value = WidgetsBinding.instance!.window.viewInsets.bottom;
-      if (value > 0) {
+      final value = WidgetsBinding.instance.window.viewInsets.bottom;
+      bool keyboardIsOpen = value > 0;
+      if (PlatformCheck.isAndroid && !keyboardIsOpen) {
+        keyboardIsOpen = _currentAction?.focusNode.hasFocus == true;
+      }
+      if (keyboardIsOpen) {
         _onKeyboardChanged(true);
         isKeyboardOpen = true;
       } else {
@@ -282,7 +304,7 @@ class KeyboardActionstate extends State<KeyboardActions>
       }
     }
     // Need to wait a frame to get the new size
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       _updateOffset();
     });
   }
@@ -398,15 +420,20 @@ class KeyboardActionstate extends State<KeyboardActions>
     double newOffset = _currentAction!.displayActionBar
         ? _kBarSize
         : 0; // offset for the actions bar
-    newOffset += MediaQuery.of(context)
-        .viewInsets
-        .bottom; // + offset for the system keyboard
+
+    final keyboardHeight = EdgeInsets.fromWindowPadding(
+            WidgetsBinding.instance.window.viewInsets,
+            WidgetsBinding.instance.window.devicePixelRatio)
+        .bottom;
+
+    newOffset += keyboardHeight; // + offset for the system keyboard
 
     if (_currentFooter != null) {
       newOffset +=
           _currentFooter!.preferredSize.height; // + offset for the footer
     }
-    newOffset = newOffset - _localMargin;
+
+    newOffset -= _localMargin + _distanceBelowWidget;
 
     if (newOffset < 0) newOffset = 0;
 
@@ -422,9 +449,10 @@ class KeyboardActionstate extends State<KeyboardActions>
 
   void _onLayout() {
     if (widget.isDialog) {
-      final render = _keyParent.currentContext!.findRenderObject() as RenderBox;
+      final render =
+          _keyParent.currentContext?.findRenderObject() as RenderBox?;
       final fullHeight = MediaQuery.of(context).size.height;
-      final localHeight = render.size.height;
+      final localHeight = render?.size.height ?? 0;
       _localMargin = (fullHeight - localHeight) / 2;
     }
   }
@@ -450,16 +478,16 @@ class KeyboardActionstate extends State<KeyboardActions>
   void dispose() {
     clearConfig();
     _removeOverlay(fromDispose: true);
-    WidgetsBinding.instance!.removeObserver(this);
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   @override
   void initState() {
-    WidgetsBinding.instance!.addObserver(this);
+    WidgetsBinding.instance.addObserver(this);
     if (widget.enable) {
       setConfig(widget.config);
-      WidgetsBinding.instance!.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
         _onLayout();
         _updateOffset();
       });
@@ -496,28 +524,28 @@ class KeyboardActionstate extends State<KeyboardActions>
           top: false,
           bottom: false,
           child: Row(
+            mainAxisAlignment:
+                _currentAction?.toolbarAlignment ?? MainAxisAlignment.end,
             children: [
-              config!.nextFocus && displayArrows
-                  ? IconButton(
-                      icon: Icon(Icons.keyboard_arrow_up),
-                      tooltip: 'Previous',
-                      iconSize: IconTheme.of(context).size!,
-                      color: IconTheme.of(context).color,
-                      disabledColor: Theme.of(context).disabledColor,
-                      onPressed: _previousIndex != null ? _onTapUp : null,
-                    )
-                  : const SizedBox.shrink(),
-              config!.nextFocus && displayArrows
-                  ? IconButton(
-                      icon: Icon(Icons.keyboard_arrow_down),
-                      tooltip: 'Next',
-                      iconSize: IconTheme.of(context).size!,
-                      color: IconTheme.of(context).color,
-                      disabledColor: Theme.of(context).disabledColor,
-                      onPressed: _nextIndex != null ? _onTapDown : null,
-                    )
-                  : const SizedBox.shrink(),
-              Spacer(),
+              if (config!.nextFocus && displayArrows) ...[
+                IconButton(
+                  icon: Icon(Icons.keyboard_arrow_up),
+                  tooltip: 'Previous',
+                  iconSize: IconTheme.of(context).size!,
+                  color: IconTheme.of(context).color,
+                  disabledColor: Theme.of(context).disabledColor,
+                  onPressed: _previousIndex != null ? _onTapUp : null,
+                ),
+                IconButton(
+                  icon: Icon(Icons.keyboard_arrow_down),
+                  tooltip: 'Next',
+                  iconSize: IconTheme.of(context).size!,
+                  color: IconTheme.of(context).color,
+                  disabledColor: Theme.of(context).disabledColor,
+                  onPressed: _nextIndex != null ? _onTapDown : null,
+                ),
+                const Spacer(),
+              ],
               if (_currentAction?.displayDoneButton != null &&
                   _currentAction!.displayDoneButton &&
                   (_currentAction!.toolbarButtons == null ||

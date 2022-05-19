@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'sample.dart';
 import 'sample2.dart';
 import 'sample3.dart';
+import 'sample4.dart';
+import 'sample5.dart';
 
 // Application entry-point
 void main() => runApp(MyApp());
@@ -77,6 +79,26 @@ class MyApp extends StatelessWidget {
                     onPressed: () => _openWidget(
                       myContext,
                       Sample3(),
+                    ),
+                  ),
+                  const SizedBox(
+                    height: 25,
+                  ),
+                  ElevatedButton(
+                    child: Text("Custom Sample 4"),
+                    onPressed: () => _openWidget(
+                      myContext,
+                      Sample4(),
+                    ),
+                  ),
+                  const SizedBox(
+                    height: 25,
+                  ),
+                  ElevatedButton(
+                    child: Text("Custom Sample 5"),
+                    onPressed: () => _openWidget(
+                      myContext,
+                      Sample5(),
                     ),
                   ),
                 ],

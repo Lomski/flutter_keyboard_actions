@@ -1,5 +1,13 @@
-## [3.4.5]`
+## [4.0.0]
+*  Update to Flutter 3.0 (Use only if you are using Flutter 3 >=). Thanks `ashim-kr-saha` and `Roaa94`.
+
+## [3.4.6 - 3.4.7]
+* Bug #173 fixed. Thanks `Arenukvern`.
+* Bug #172 fixed. Thanks `BenjaminFarquhar`.
+
+## [3.4.5]
 * `keepFocusOnTappingNode` was added. Thanks `alex-min`.
+* `toolbarAlignment` was added in `KeyboardActionsItem`. Thanks `f-person` (Arshak Aghakaryan).
 
 ## [3.4.4]
 *  `defaultDoneWidget` was added in `KeyboardActionsConfig`. Thanks `peter-gy`. 
